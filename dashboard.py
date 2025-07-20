@@ -27,9 +27,9 @@ order by 1"""
 
 df = load_data()
 
-st.subheader("نمونه داده‌ها")
+st.subheader("Transaction Stats per Month (By Success)")
 st.write(df.head())
 
 # رسم یک نمودار ساده ستونی
-fig = px.bar(df, x=df.columns[0], y=df.columns[1], title="نمودار ستونی نمونه")
+fig = px.bar(df, x=df.columns[0], y=df.columns[1], title="Number of Transactions Based on Success Over Time")
 st.plotly_chart(fig)
