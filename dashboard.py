@@ -131,29 +131,3 @@ fig_tps = px.scatter(df_tps, x="Date", y="TPS", size="TPS",
                      title="Transaction Per Second (TPS) Over Time")
 st.plotly_chart(fig_tps, use_container_width=True)
 
-# ------------------ عدد مربوط به Correlation Coefficient ------------------
-@st.cache_data
-def load_corr_data(start_date, end_date):
-    query = f"""
-        WITH tab1 AS (
-            SELECT block_timestamp::date AS date,
-                   COUNT(DISTINCT tx_id) AS total_tx_count
-            FROM axelar.core.fact_transactions
-            WHERE block_timestamp::date >= '{start_date}' AND block_timestamp::date <= '{end_date}'
-            GROUP BY 1
-        ),
-        tab2 AS (
-            SELECT block_timestamp::date AS date,
-                   COUNT(DISTINCT tx_id) AS false_tx_count
-            FROM axelar.core.fact_transactions
-            WHERE block_timestamp::date >= '{start_date}' AND block_timestamp::date <= '{end_date}'
-              AND tx_succeeded = 'FALSE'
-            GROUP BY 1
-        )
-        SELECT CORR(total_tx_count, false_tx_count) AS cc
-        FROM tab1 LEFT JOIN tab2 ON tab1.date = tab2.date
-    """
-    return round(pd.read_sql(query, conn).iloc[0, 0], 2)
-
-corr_coef = load_corr_data(start_date, end_date)
-st.metric("Correlation Coefficient (Transactions vs Failed Transactions)", f"{corr_coef}")
