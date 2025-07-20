@@ -68,3 +68,16 @@ fig_hbar = px.bar(df, y="Date", x="TXs Count", color="TX Success",
                   orientation='h',
                   title="Horizontal Bar Chart of Transactions by Month")
 st.plotly_chart(fig_hbar)
+
+# 6. نمودار ستونی نرمالیزه‌شده (درصدی)
+df_percent = df.copy()
+# محاسبه مجموع تراکنش‌ها در هر ماه
+monthly_total = df_percent.groupby("Date")["TXs Count"].transform("sum")
+# تبدیل به درصد
+df_percent["Percentage"] = df_percent["TXs Count"] / monthly_total * 100
+
+fig_normalized = px.bar(df_percent, x="Date", y="Percentage", color="TX Success",
+                        title="Normalized Monthly Transactions by Success (%)",
+                        barmode="stack")
+st.plotly_chart(fig_normalized)
+
