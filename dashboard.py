@@ -82,36 +82,30 @@ df = load_main_data(timeframe, start_date, end_date)
 success_rate = load_success_rate(start_date, end_date)
 total_txs = load_total_txs(start_date, end_date)
 
-# نمایش متریک‌ها
+# ردیف اول: نمایش متریک‌ها
 col1, col2 = st.columns(2)
 col1.metric(label="Current Success Rate of Transactions", value=f"{success_rate}%")
 col2.metric(label="Total Transactions Count", value=f"{total_txs:,}")
 
-# جدول اصلی
-st.subheader("Transaction Stats per Selected Period (By Success)")
-st.write(df.head())
-
-# نمودارها (همان نمودارهای قبلی)
+# ردیف دوم: نمودار ستونی (Bar Chart)
 fig_bar = px.bar(df, x="Date", y="TXs Count", color="TX Success",
                  title="Number of Transactions Based on Success Over Time")
 st.plotly_chart(fig_bar)
 
-fig_line = px.line(df, x="Date", y="TXs Count", color="TX Success",
-                   title="Transactions Trend Over Time")
-st.plotly_chart(fig_line)
+# ردیف سوم: نمودار نرمال شده و نمودار دایره‌ای کنار هم
+col3, col4 = st.columns(2)
 
-fig_area = px.area(df, x="Date", y="TXs Count", color="TX Success",
-                   title="Area Chart of Transactions Over Time")
-st.plotly_chart(fig_area)
-
-fig_hist = px.histogram(df, x="Date", y="TXs Count", color="TX Success",
-                        title="Histogram of Transactions")
-st.plotly_chart(fig_hist)
-
+# نمودار نرمال شده (Normalized Stacked Bar Chart)
 df_percent = df.copy()
 monthly_total = df_percent.groupby("Date")["TXs Count"].transform("sum")
 df_percent["Percentage"] = df_percent["TXs Count"] / monthly_total * 100
 fig_normalized = px.bar(df_percent, x="Date", y="Percentage", color="TX Success",
-                        title="Normalized Monthly Transactions by Success (%)",
+                        title="Normalized Transactions by Success (%)",
                         barmode="stack")
-st.plotly_chart(fig_normalized)
+col3.plotly_chart(fig_normalized)
+
+# نمودار دایره‌ای (Pie Chart) - Total Transactions Count by Success
+summary = df.groupby("TX Success")["TXs Count"].sum().reset_index()
+fig_pie = px.pie(summary, names="TX Success", values="TXs Count",
+                 title="Success vs Failed Transactions (Total)")
+col4.plotly_chart(fig_pie)
