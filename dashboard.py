@@ -15,7 +15,7 @@ build applications that operate across multiple chains without complex integrati
 connectivity, Axelar aims to drive the adoption of Web3 by creating a unified, interoperable blockchain environment.
 """)
 
-# اتصال به Snowflake (اطلاعات در Secrets ذخیره می‌شود)
+# اتصال به Snowflake
 conn = snowflake.connector.connect(
     user=st.secrets["snowflake"]["user"],
     password=st.secrets["snowflake"]["password"],
@@ -25,69 +25,57 @@ conn = snowflake.connector.connect(
     schema="PUBLIC"
 )
 
+# انتخاب Time Frame
+timeframe = st.selectbox("Select Time Frame", ["day", "week", "month"])
+
+# انتخاب بازه زمانی
+start_date = st.date_input("Start Date", value=pd.to_datetime("2022-01-01"))
+end_date = st.date_input("End Date", value=pd.to_datetime("today"))
+
 @st.cache_data
-def load_data():
-    query = """
-    select date_trunc('month',block_timestamp) as "Date",
-           count(distinct tx_id) as "TXs Count",
-           tx_succeeded as "TX Success"
-    from AXELAR.CORE.FACT_TRANSACTIONS
-    where block_timestamp::date >= '2022-01-01'
-    group by 1,3
-    order by 1
+def load_data(timeframe, start_date, end_date):
+    query = f"""
+    SELECT date_trunc('{timeframe}', block_timestamp) AS "Date",
+           COUNT(DISTINCT tx_id) AS "TXs Count",
+           tx_succeeded AS "TX Success"
+    FROM AXELAR.CORE.FACT_TRANSACTIONS
+    WHERE block_timestamp::date >= '{start_date}'
+      AND block_timestamp::date <= '{end_date}'
+    GROUP BY 1, 3
+    ORDER BY 1
     """
-    df = pd.read_sql(query, conn)
-    conn.close()
-    return df
+    return pd.read_sql(query, conn)
 
-df = load_data()
+df = load_data(timeframe, start_date, end_date)
 
-st.subheader("Transaction Stats per Month (By Success)")
+st.subheader("Transaction Stats per Selected Period (By Success)")
 st.write(df.head())
 
-# نمودار ستونی ساده
-fig = px.bar(df, x="Date", y="TXs Count", color="TX Success",
-             title="Number of Transactions Based on Success Over Time")
-st.plotly_chart(fig)
+# نمودار 1: ستونی ساده
+fig_bar = px.bar(df, x="Date", y="TXs Count", color="TX Success",
+                 title="Number of Transactions Based on Success Over Time")
+st.plotly_chart(fig_bar)
 
-# 1. نمودار خطی
+# نمودار 2: خطی
 fig_line = px.line(df, x="Date", y="TXs Count", color="TX Success",
-                   title="Transaction Trend Over Time",
-                   markers=True)
+                   title="Transactions Trend Over Time")
 st.plotly_chart(fig_line)
 
-# 2. نمودار میله‌ای گروه‌بندی‌شده
-fig_grouped = px.bar(df, x="Date", y="TXs Count", color="TX Success",
-                     barmode="group",
-                     title="Monthly Transactions by Success/Failure")
-st.plotly_chart(fig_grouped)
-
-# 3. نمودار پشته‌ای (Stacked Area Chart)
+# نمودار 3: مساحت
 fig_area = px.area(df, x="Date", y="TXs Count", color="TX Success",
-                   title="Cumulative Transactions Over Time (Stacked by Success)")
+                   title="Area Chart of Transactions Over Time")
 st.plotly_chart(fig_area)
 
-# 4. نمودار دایره‌ای (Pie Chart) برای کل داده‌ها
-summary = df.groupby("TX Success")["TXs Count"].sum().reset_index()
-fig_pie = px.pie(summary, names="TX Success", values="TXs Count",
-                 title="Success vs Failed Transactions (Total)")
-st.plotly_chart(fig_pie)
+# نمودار 4: هیستوگرام
+fig_hist = px.histogram(df, x="Date", y="TXs Count", color="TX Success",
+                        title="Histogram of Transactions")
+st.plotly_chart(fig_hist)
 
-# 5. نمودار ستونی افقی (Horizontal Bar Chart)
-fig_hbar = px.bar(df, y="Date", x="TXs Count", color="TX Success",
-                  orientation='h',
-                  title="Horizontal Bar Chart of Transactions by Month")
-st.plotly_chart(fig_hbar)
-
-# 6. نمودار ستونی نرمالیزه‌شده (درصدی)
+# نمودار 5: ستونی نرمالیزه‌شده (درصدی)
 df_percent = df.copy()
-# محاسبه مجموع تراکنش‌ها در هر ماه
 monthly_total = df_percent.groupby("Date")["TXs Count"].transform("sum")
-# تبدیل به درصد
 df_percent["Percentage"] = df_percent["TXs Count"] / monthly_total * 100
-
 fig_normalized = px.bar(df_percent, x="Date", y="Percentage", color="TX Success",
                         title="Normalized Monthly Transactions by Success (%)",
                         barmode="stack")
 st.plotly_chart(fig_normalized)
-
