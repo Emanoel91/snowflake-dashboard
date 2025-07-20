@@ -3,7 +3,7 @@ import pandas as pd
 import snowflake.connector
 import plotly.express as px
 
-st.title("داشبورد Snowflake با Streamlit")
+st.title("Axelar Network Performance Analysis")
 
 # اتصال به Snowflake (اطلاعات در Secrets ذخیره می‌شود)
 conn = snowflake.connector.connect(
