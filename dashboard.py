@@ -17,12 +17,12 @@ conn = snowflake.connector.connect(
 
 @st.cache_data
 def load_data():
-    query = "select date_trunc('month',block_timestamp) as "Date", count(distinct tx_id) as "TXs Count", 
+    query = """select date_trunc('month',block_timestamp) as "Date", count(distinct tx_id) as "TXs Count", 
 tx_succeeded as "TX Success"
 from AXELAR.CORE.FACT_TRANSACTIONS
 where block_timestamp::date>='2022-01-01'
 group by 1,3
-order by 1"
+order by 1"""
     return pd.read_sql(query, conn)
 
 df = load_data()
