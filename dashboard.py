@@ -5,6 +5,7 @@ import plotly.express as px
 
 st.title("Axelar Network Performance Analysis")
 
+# توضیحات پایین عنوان
 st.markdown("""
 ### About Axelar
 Axelar Network is a decentralized blockchain platform designed to enable seamless interoperability between disparate blockchain ecosystems. 
@@ -25,12 +26,12 @@ conn = snowflake.connector.connect(
     schema="PUBLIC"
 )
 
-# انتخاب Time Frame
+# انتخاب Time Frame و Time Period
 timeframe = st.selectbox("Select Time Frame", ["day", "week", "month"])
-
-# انتخاب بازه زمانی
 start_date = st.date_input("Start Date", value=pd.to_datetime("2022-01-01"))
 end_date = st.date_input("End Date", value=pd.to_datetime("today"))
+
+# --- کوئری‌ها ---
 
 @st.cache_data
 def load_main_data(timeframe, start_date, end_date):
@@ -77,22 +78,43 @@ def load_total_txs(start_date, end_date):
     """
     return pd.read_sql(query, conn).iloc[0, 0]
 
-# اجرای کوئری‌ها
+@st.cache_data
+def load_tps_data(timeframe, start_date, end_date):
+    query = f"""
+    WITH tab1 AS (
+        SELECT block_timestamp::date AS date,
+               COUNT(DISTINCT tx_id) / 86400 AS TPS
+        FROM axelar.core.fact_transactions
+        WHERE tx_succeeded = 'true'
+          AND block_timestamp::date >= '{start_date}'
+          AND block_timestamp::date <= '{end_date}'
+        GROUP BY 1
+    )
+    SELECT date_trunc('{timeframe}', date) AS "Date",
+           ROUND(AVG(tps), 2) AS TPS
+    FROM tab1
+    GROUP BY 1
+    ORDER BY 1
+    """
+    return pd.read_sql(query, conn)
+
+# --- اجرای کوئری‌ها ---
 df = load_main_data(timeframe, start_date, end_date)
 success_rate = load_success_rate(start_date, end_date)
 total_txs = load_total_txs(start_date, end_date)
+df_tps = load_tps_data(timeframe, start_date, end_date)
 
-# ردیف اول: نمایش متریک‌ها
+# --- ردیف اول: نمایش متریک‌ها ---
 col1, col2 = st.columns(2)
 col1.metric(label="Current Success Rate of Transactions", value=f"{success_rate}%")
 col2.metric(label="Total Transactions Count", value=f"{total_txs:,}")
 
-# ردیف دوم: نمودار ستونی (Bar Chart)
+# --- ردیف دوم: نمودار ستونی (Bar Chart) ---
 fig_bar = px.bar(df, x="Date", y="TXs Count", color="TX Success",
                  title="Number of Transactions Based on Success Over Time")
 st.plotly_chart(fig_bar)
 
-# ردیف سوم: نمودار نرمال شده و نمودار دایره‌ای کنار هم
+# --- ردیف سوم: نمودار نرمال شده و نمودار دایره‌ای ---
 col3, col4 = st.columns(2)
 
 # نمودار نرمال شده (Normalized Stacked Bar Chart)
@@ -109,3 +131,10 @@ summary = df.groupby("TX Success")["TXs Count"].sum().reset_index()
 fig_pie = px.pie(summary, names="TX Success", values="TXs Count",
                  title="Success vs Failed Transactions (Total)")
 col4.plotly_chart(fig_pie)
+
+# --- ردیف چهارم: نمودار نقطه‌ای (Scatter Plot) - TPS Over Time ---
+fig_tps = px.scatter(df_tps, x="Date", y="TPS", size="TPS",
+                     title="Transaction Per Second (TPS) Over Time",
+                     labels={"TPS": "Transactions Per Second"},
+                     color="TPS", color_continuous_scale="Viridis")
+st.plotly_chart(fig_tps)
