@@ -179,13 +179,10 @@ st.plotly_chart(fig_tps)
 st.metric("Effect of Increasing the Number of Transactions on the Number of Failed Transactions",
           f"{correlation:.2f}")
 
-# --- Row 6: Heatmap (ordered by day of week) ---
-day_order = ["1 - Saturday", "2 - Sunday", "3 - Monday", "4 - Tuesday", "5 - Wednesday", "6 - Thursday", "7 - Friday"]
-df_hour_day["Day Name"] = pd.Categorical(df_hour_day["Day Name"], categories=day_order, ordered=True)
-
+# --- Row 6: Heatmap ---
 heatmap_data = df_hour_day.pivot_table(index="Day Name", columns="Hour", values="TXs Count", fill_value=0)
 fig_heatmap = px.imshow(heatmap_data, aspect="auto",
-                        title="Time Pattern of Axelar Network Transactions (Ordered by Day of Week)",
+                        title="Time Pattern of Axelar Network Transactions",
                         labels=dict(x="Hour", y="Day Name", color="TXs Count"))
 st.plotly_chart(fig_heatmap)
 
