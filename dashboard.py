@@ -198,4 +198,13 @@ col5.plotly_chart(fig_hourly)
 
 daily_summary = df_hour_day.groupby("Day Name")["TXs Count"].sum().reset_index()
 fig_daily = px.bar(daily_summary, x="Day Name", y="TXs Count",
-                   title="Total Number
+                   title="Total Number of Transactions on Different Days of the Week")
+col6.plotly_chart(fig_daily)
+
+# --- Row 8: Peak Activity ---
+peak = df_hour_day.loc[df_hour_day["TXs Count"].idxmax()]
+peak_hour = int(peak["Hour"])
+peak_day = peak["Day Name"]
+peak_count = int(peak["TXs Count"])
+
+st.metric("Peak Activity Period", f"{peak_day}, Hour {peak_hour}", delta=f"{peak_count:,} TXs")
