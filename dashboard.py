@@ -98,11 +98,37 @@ def load_tps_data(timeframe, start_date, end_date):
     """
     return pd.read_sql(query, conn)
 
+@st.cache_data
+def load_correlation_data(start_date, end_date):
+    query = f"""
+    WITH tab1 AS (
+        SELECT block_timestamp::date AS date,
+               COUNT(DISTINCT tx_id) AS total_tx_count
+        FROM axelar.core.fact_transactions
+        WHERE block_timestamp::date >= '{start_date}'
+          AND block_timestamp::date <= '{end_date}'
+        GROUP BY 1
+    ),
+    tab2 AS (
+        SELECT block_timestamp::date AS date,
+               COUNT(DISTINCT tx_id) AS false_tx_count
+        FROM axelar.core.fact_transactions
+        WHERE block_timestamp::date >= '{start_date}'
+          AND block_timestamp::date <= '{end_date}'
+          AND tx_succeeded = 'false'
+        GROUP BY 1
+    )
+    SELECT corr(total_tx_count, false_tx_count) AS cc
+    FROM tab1 LEFT JOIN tab2 ON tab1.date = tab2.date
+    """
+    return pd.read_sql(query, conn).iloc[0, 0]
+
 # --- اجرای کوئری‌ها ---
 df = load_main_data(timeframe, start_date, end_date)
 success_rate = load_success_rate(start_date, end_date)
 total_txs = load_total_txs(start_date, end_date)
 df_tps = load_tps_data(timeframe, start_date, end_date)
+correlation_value = load_correlation_data(start_date, end_date)
 
 # --- ردیف اول: نمایش متریک‌ها ---
 col1, col2 = st.columns(2)
@@ -138,3 +164,9 @@ fig_tps = px.scatter(df_tps, x="Date", y="TPS", size="TPS",
                      labels={"TPS": "Transactions Per Second"},
                      color="TPS", color_continuous_scale="Viridis")
 st.plotly_chart(fig_tps)
+
+# --- ردیف پنجم: نمایش Correlation Coefficient ---
+st.metric(
+    label="Effect of Increasing the Number of Transactions on the Number of Failed Transactions",
+    value=f"{correlation_value:.2f}"
+)
