@@ -167,6 +167,6 @@ st.plotly_chart(fig_tps)
 
 # --- ردیف پنجم: نمایش Correlation Coefficient ---
 st.metric(
-    label="Effect of Increasing the Number of Transactions on the Number of Failed Transactions",
+    label="Effect of Increasing the Number of Transactions on the Number of Failed Transactions (Correlation Coefficient)",
     value=f"{correlation_value:.2f}"
 )
