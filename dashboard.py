@@ -3,6 +3,9 @@ import pandas as pd
 import snowflake.connector
 import plotly.express as px
 
+# --- Wide Layout ---
+st.set_page_config(layout="wide")
+
 st.title("Axelar Network Performance Analysis")
 
 st.markdown("""
