@@ -168,10 +168,10 @@ fig_pie = px.pie(summary, names="TX Success", values="TXs Count",
                  title="Success vs Failed Transactions (Total)")
 col4.plotly_chart(fig_pie)
 
-# --- Row 4: Scatter Plot for TPS ---
-fig_tps = px.scatter(tps_df, x="Date", y="TPS", size="TPS",
-                     title="Transaction per Second (TPS) Over Time",
-                     labels={"TPS": "Transactions Per Second"})
+# --- Row 4: TPS Scatter Plot ---
+fig_tps = px.scatter(df_tps, x="Date", y="TPS", size="TPS",
+                     title="Transaction Per Second (TPS) Over Time",
+                     color="TPS", color_continuous_scale="Viridis")
 st.plotly_chart(fig_tps)
 
 # --- Row 5: Correlation Coefficient ---
