@@ -178,9 +178,10 @@ daily_df = df_heatmap.groupby("Day Name")["TXs Count"].sum().reset_index()
 fig_day = px.bar(daily_df, x="Day Name", y="TXs Count", title="Total Number of Transactions on Different Days of the Week")
 col6.plotly_chart(fig_day)
 
-# --- Row 8: Raw Data Viewer (Optional) ---
-with st.expander("Show Raw TPS Data"):
-    st.dataframe(tps_df)
+# --- Row 8: Peak Activity ---
+peak = df_hour_day.loc[df_hour_day["TXs Count"].idxmax()]
+peak_hour = int(peak["Hour"])
+peak_day = peak["Day Name"]
+peak_count = int(peak["TXs Count"])
 
-with st.expander("Show Raw Heatmap Data"):
-    st.dataframe(df_heatmap)
+st.metric("Peak Activity Period", f"{peak_day}, Hour {peak_hour}", delta=f"{peak_count:,} TXs")
